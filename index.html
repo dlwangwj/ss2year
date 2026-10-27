@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二年级速算挑战</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: #333;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    text-align: center;
+    margin: auto; /* 内容超高时可正常滚动，不会被裁切 */
+  }
+
+  h1 { font-size: 28px; color: #ff7043; margin-bottom: 6px; }
+  .sub { color: #888; font-size: 14px; margin-bottom: 20px; }
+
+  .btn {
+    margin-top: 22px;
+    padding: 12px 36px;
+    border: none;
+    border-radius: 30px;
+    background: #ff7043;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #d84315;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #d84315; }
+  .btn.small { font-size: 16px; padding: 8px 20px; margin-top: 0; }
+  .btn.gray { background: #90a4ae; box-shadow: 0 4px 0 #607d8b; }
+
+  /* 底部固定按钮栏 */
+  .bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+  }
+  .bottom-bar .btn { width: 100%; max-width: 448px; margin-top: 0; }
+
+  .hidden { display: none !important; }
+
+  /* 菜单 */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .stats.two { grid-template-columns: 1fr 1fr; }
+  .stats.three { grid-template-columns: repeat(3, 1fr); }
+  .stat {
+    background: #fff3e0;
+    border-radius: 14px;
+    padding: 14px 8px;
+  }
+  .stat .num { font-size: 24px; font-weight: bold; color: #ff7043; }
+  .stat .name { font-size: 13px; color: #888; margin-top: 4px; }
+
+  /* 游戏界面 */
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .timer { color: #e53935; }
+  .timer.warn { animation: blink 0.5s infinite alternate; }
+  @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
+
+  .bar { height: 10px; background: #ffe0b2; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+  .bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff7043, #ffb74d); transition: width 1s linear; }
+
+  #game { padding-bottom: 80px; } /* 给底部固定按钮留出空间 */
+
+  .question { font-size: 56px; font-weight: bold; margin: 26px 0 14px; min-height: 70px; letter-spacing: 2px; }
+  .question .eq { color: #ff7043; }
+
+  #answer {
+    font-size: 36px;
+    width: 180px;
+    text-align: center;
+    padding: 8px;
+    border: 3px solid #ffb74d;
+    border-radius: 12px;
+    outline: none;
+  }
+  #answer:focus { border-color: #ff7043; }
+
+  /* 结算界面 */
+  .rank { font-size: 22px; margin: 10px 0; color: #43a047; font-weight: bold; min-height: 30px; }
+  .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* 答题详情 */
+  .detail-box { margin-top: 16px; text-align: left; }
+  .detail-tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+  .tab {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid #ffe0b2;
+    background: #fff;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #888;
+    cursor: pointer;
+  }
+  .tab.active { border-color: #ff7043; color: #ff7043; font-weight: bold; background: #fff3e0; }
+  .detail-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 2px solid #ffe0b2;
+    border-radius: 10px;
+    padding: 6px;
+  }
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  .detail-item.ok { background: #e8f5e9; color: #2e7d32; }
+  .detail-item.bad { background: #ffebee; color: #c62828; }
+  .detail-item .ua { font-size: 13px; }
+  .detail-empty { color: #bbb; font-size: 14px; text-align: center; padding: 14px 0; }
+
+  /* 平板适配：屏幕较宽时整体放大 */
+  @media (min-width: 600px) {
+    .card { max-width: 640px; padding: 36px; border-radius: 24px; }
+    h1 { font-size: 36px; }
+    .sub { font-size: 16px; }
+    .btn { font-size: 22px; padding: 14px 44px; }
+    .btn.small { font-size: 18px; padding: 10px 26px; }
+    .stats { gap: 14px; }
+    .stat { padding: 16px 8px; }
+    .stat .num { font-size: 30px; }
+    .stat .name { font-size: 15px; }
+    .hud { font-size: 20px; margin-bottom: 12px; }
+    .bar { height: 12px; }
+    .question { font-size: 76px; min-height: 96px; }
+    #answer { font-size: 44px; width: 240px; padding: 10px; border-width: 4px; }
+    .bottom-bar .btn { max-width: 608px; }
+    .rank { font-size: 26px; }
+    .detail-item { font-size: 19px; padding: 8px 12px; }
+    .detail-list { max-height: 280px; }
+  }
+
+  /* 横屏（高度较小）时压缩纵向间距，保证一屏放下 */
+  @media (max-height: 700px) {
+    body { padding: 10px; }
+    .card { padding: 16px 24px; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .sub { margin-bottom: 12px; font-size: 14px; }
+    .stats { margin: 10px 0; gap: 8px; }
+    .stat { padding: 8px 6px; }
+    .stat .num { font-size: 20px; }
+    .stat .name { font-size: 12px; }
+    .question { font-size: 44px; margin: 10px 0 8px; min-height: 56px; }
+    #answer { font-size: 30px; width: 170px; padding: 6px; border-width: 3px; }
+    .btn { margin-top: 12px; padding: 10px 30px; font-size: 18px; }
+    .rank { font-size: 20px; margin: 6px 0; }
+    .detail-list { max-height: 140px; }
+    #game { padding-bottom: 72px; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- 菜单 -->
+  <div id="menu">
+    <h1>二年级速算挑战</h1>
+    <p class="sub">限时口算，看看你能答对多少题！</p>
+
+    <div class="stats three">
+      <div class="stat"><div class="num">100以内</div><div class="name">加减法混合</div></div>
+      <div class="stat"><div class="num">5分钟</div><div class="name">限时作答</div></div>
+      <div class="stat"><div class="num">50题</div><div class="name">答完即结束</div></div>
+    </div>
+
+    <button class="btn" id="startBtn">开始挑战</button>
+    <p class="sub" style="margin-top:16px;">历史最佳：<span id="bestMenu">0</span> 题</p>
+  </div>
+
+  <!-- 游戏 -->
+  <div id="game" class="hidden">
+    <div class="hud">
+      <span>进度：<span id="progress">0/50</span></span>
+      <span class="timer" id="timer">05:00</span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+
+    <div class="question" id="question"></div>
+    <input type="number" id="answer" inputmode="numeric" autocomplete="off">
+
+    <div class="bottom-bar">
+      <button class="btn" id="submitBtn">下一题</button>
+    </div>
+  </div>
+
+  <!-- 结算 -->
+  <div id="result" class="hidden">
+    <h1>挑战结束！</h1>
+    <div class="rank" id="rankText"></div>
+
+    <div class="stats three">
+      <div class="stat"><div class="num" id="rCorrect">0</div><div class="name">答对题数</div></div>
+      <div class="stat"><div class="num" id="rWrong">0</div><div class="name">答错题数</div></div>
+      <div class="stat"><div class="num" id="rUnanswered">0</div><div class="name">未作答题数</div></div>
+      <div class="stat"><div class="num" id="rAccuracy">0%</div><div class="name">正确率</div></div>
+      <div class="stat"><div class="num" id="rCombo">0</div><div class="name">最高连击</div></div>
+      <div class="stat"><div class="num" id="rTime">00:00</div><div class="name">用时</div></div>
+    </div>
+
+    <div class="detail-box">
+      <div class="detail-tabs">
+        <button class="tab active" id="tabOk">答对 <span id="okCount">0</span></button>
+        <button class="tab" id="tabBad">答错 <span id="badCount">0</span></button>
+      </div>
+      <div class="detail-list" id="detailList"></div>
+    </div>
+
+    <p class="sub">历史最佳：<span id="bestResult">0</span> 题</p>
+
+    <div class="btn-row">
+      <button class="btn" id="againBtn">再来一次</button>
+      <button class="btn gray" id="backBtn">返回菜单</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL_QUESTIONS = 50;
+  const TIME_LIMIT = 300;               // 秒
+  const BEST_KEY = 'grade2_add_sub_100_best';
+
+  let timeLeft = 0;
+  let timerId = null;
+  let startTime = 0;
+  let done = 0;                         // 已作答题数
+  let correct = 0;
+  let wrong = 0;
+  let combo = 0;
+  let maxCombo = 0;
+  let current = null;                   // { answer }
+  let active = false;
+  let asked = new Set();                // 本局已出过的题
+  let typedSlots = new Set();           // 本局「两位数减一位数」专项题的题号（前 35 题中随机 8 题）
+  let log = [];                         // 本局答题记录
+
+  const $ = id => document.getElementById(id);
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // 两位数以内加法：a + b <= 100
+  function makeAddition() {
+    const a = randInt(1, 99);
+    const b = randInt(1, 100 - a);
+    return { a, op: '+', b, answer: a + b };
+  }
+
+  // 减法：结果保持在 1 ~ 99 之间（不含两位数减一位数，该题型由专项保证 8 道）
+  function makeSubtraction() {
+    let a, b;
+    do {
+      a = randInt(2, 100);
+      b = randInt(1, a - 1);
+    } while (a >= 10 && b <= 9);
+    return { a, op: '−', b, answer: a - b };
+  }
+
+  // 两位数减一位数专项题
+  function makeSub21() {
+    const a = randInt(10, 99);
+    const b = randInt(1, 9);
+    return { a, op: '−', b, answer: a - b };
+  }
+
+  // 最后 15 题：100 − 多少（减数为两位数）
+  function makeComplement() {
+    const b = randInt(10, 99);
+    return { a: 100, op: '−', b, answer: 100 - b };
+  }
+
+  // 同一道题的唯一标识：加法交换律视为同一题（3+5 与 5+3 相同）
+  function questionKey(q) {
+    return q.op === '+'
+      ? `${Math.min(q.a, q.b)}+${Math.max(q.a, q.b)}`
+      : `${q.a}-${q.b}`;
+  }
+
+  function nextQuestion() {
+    let q;
+    do {
+      if (done >= TOTAL_QUESTIONS - 15) {
+        q = makeComplement();
+      } else if (typedSlots.has(done)) {
+        q = makeSub21();
+      } else {
+        q = Math.random() < 0.5 ? makeAddition() : makeSubtraction();
+      }
+    } while (asked.has(questionKey(q)));
+    asked.add(questionKey(q));
+    current = q;
+    $('question').innerHTML = `${current.a} <span class="eq">${current.op}</span> ${current.b} =`;
+    $('answer').value = '';
+    $('answer').focus();
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function updateHud() {
+    $('progress').textContent = `${done}/${TOTAL_QUESTIONS}`;
+    $('timer').textContent = formatTime(timeLeft);
+    $('timer').classList.toggle('warn', timeLeft <= 30);
+    $('barFill').style.width = (timeLeft / TIME_LIMIT * 100) + '%';
+  }
+
+  function getBest() {
+    return Number(localStorage.getItem(BEST_KEY) || 0);
+  }
+
+  function startGame() {
+    clearInterval(timerId);
+    done = 0;
+    asked = new Set();
+    typedSlots = new Set();
+    while (typedSlots.size < 8) typedSlots.add(randInt(0, TOTAL_QUESTIONS - 15 - 1));
+    log = [];
+    correct = 0;
+    wrong = 0;
+    combo = 0;
+    maxCombo = 0;
+    timeLeft = TIME_LIMIT;
+    startTime = Date.now();
+    active = true;
+
+    $('menu').classList.add('hidden');
+    $('result').classList.add('hidden');
+    $('game').classList.remove('hidden');
+
+    updateHud();
+    nextQuestion();
+
+    timerId = setInterval(() => {
+      timeLeft--;
+      updateHud();
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function submitAnswer() {
+    if (!active) return;
+    const raw = $('answer').value.trim();
+    if (raw === '') {
+      $('answer').focus();
+      return;
+    }
+
+    done++;
+
+    // 只在后台记录对错，答题过程中不显示
+    const ok = Number(raw) === current.answer;
+    log.push({
+      text: `${current.a} ${current.op} ${current.b}`,
+      user: Number(raw),
+      answer: current.answer,
+      ok
+    });
+    if (ok) {
+      correct++;
+      combo++;
+      maxCombo = Math.max(maxCombo, combo);
+    } else {
+      wrong++;
+      combo = 0;
+    }
+
+    updateHud();
+    if (done >= TOTAL_QUESTIONS) {
+      endGame();
+    } else {
+      nextQuestion();
+    }
+  }
+
+  function endGame() {
+    if (!active) return;
+    active = false;
+    clearInterval(timerId);
+
+    const answered = correct + wrong;
+    const unanswered = TOTAL_QUESTIONS - answered;
+    const accuracy = answered === 0 ? 0 : Math.round(correct / answered * 100);
+    const elapsed = Math.min(TIME_LIMIT, Math.round((Date.now() - startTime) / 1000));
+
+    const best = getBest();
+    const isNewBest = correct > best;
+    if (isNewBest) localStorage.setItem(BEST_KEY, correct);
+
+    $('rCorrect').textContent = correct;
+    $('rWrong').textContent = wrong;
+    $('rUnanswered').textContent = unanswered;
+    $('rAccuracy').textContent = accuracy + '%';
+    $('rCombo').textContent = maxCombo;
+    $('rTime').textContent = formatTime(elapsed);
+    $('bestResult').textContent = Math.max(best, correct);
+    $('rankText').textContent = isNewBest && correct > 0 ? '🎉 打破历史最佳纪录！' : rankMessage(correct);
+    renderDetails();
+
+    $('game').classList.add('hidden');
+    $('result').classList.remove('hidden');
+  }
+
+  function renderDetails() {
+    const okList = log.filter(e => e.ok);
+    const badList = log.filter(e => !e.ok);
+    $('okCount').textContent = okList.length;
+    $('badCount').textContent = badList.length;
+    showDetailTab(okList.length === 0 && badList.length > 0 ? 'bad' : 'ok');
+  }
+
+  function showDetailTab(tab) {
+    $('tabOk').classList.toggle('active', tab === 'ok');
+    $('tabBad').classList.toggle('active', tab === 'bad');
+    const list = log.filter(e => tab === 'ok' ? e.ok : !e.ok);
+    const box = $('detailList');
+    if (list.length === 0) {
+      box.innerHTML = '<div class="detail-empty">暂无记录</div>';
+      return;
+    }
+    box.innerHTML = list.map(e =>
+      `<div class="detail-item ${tab === 'ok' ? 'ok' : 'bad'}">
+         <span>${e.text} = ${e.answer}</span>
+         <span class="ua">${tab === 'ok' ? '✓' : '答 ' + e.user}</span>
+       </div>`
+    ).join('');
+  }
+
+  function rankMessage(correctCount) {
+    if (correctCount >= 45) return '太厉害了，口算小能手！';
+    if (correctCount >= 35) return '很棒，继续加油！';
+    if (correctCount >= 25) return '不错，再练练会更快！';
+    return '多多练习，你一定能行！';
+  }
+
+  function backToMenu() {
+    $('result').classList.add('hidden');
+    $('game').classList.add('hidden');
+    $('menu').classList.remove('hidden');
+    $('bestMenu').textContent = getBest();
+  }
+
+  $('startBtn').addEventListener('click', startGame);
+  $('submitBtn').addEventListener('click', submitAnswer);
+  $('againBtn').addEventListener('click', startGame);
+  $('backBtn').addEventListener('click', backToMenu);
+  $('tabOk').addEventListener('click', () => showDetailTab('ok'));
+  $('tabBad').addEventListener('click', () => showDetailTab('bad'));
+
+  $('answer').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitAnswer();
+  });
+
+  $('bestMenu').textContent = getBest();
+</script>
+</body>
+</html>
