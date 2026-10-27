@@ -47,21 +47,6 @@
   .btn.small { font-size: 16px; padding: 8px 20px; margin-top: 0; }
   .btn.gray { background: #90a4ae; box-shadow: 0 4px 0 #607d8b; }
 
-  /* 底部固定按钮栏 */
-  .bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: center;
-    z-index: 10;
-  }
-  .bottom-bar .btn { width: 100%; max-width: 448px; margin-top: 0; }
-
   .hidden { display: none !important; }
 
   /* 菜单 */
@@ -96,7 +81,7 @@
   .bar { height: 10px; background: #ffe0b2; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
   .bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff7043, #ffb74d); transition: width 1s linear; }
 
-  #game { padding-bottom: 80px; } /* 给底部固定按钮留出空间 */
+  #answerForm { display: flex; flex-direction: column; align-items: center; }
 
   .question { font-size: 56px; font-weight: bold; margin: 26px 0 14px; min-height: 70px; letter-spacing: 2px; }
   .question .eq { color: #ff7043; }
@@ -187,7 +172,6 @@
     .btn { margin-top: 12px; padding: 10px 30px; font-size: 18px; }
     .rank { font-size: 20px; margin: 6px 0; }
     .detail-list { max-height: 140px; }
-    #game { padding-bottom: 72px; }
   }
 </style>
 </head>
@@ -218,11 +202,10 @@
     <div class="bar"><div class="bar-fill" id="barFill"></div></div>
 
     <div class="question" id="question"></div>
-    <input type="number" id="answer" inputmode="numeric" autocomplete="off">
-
-    <div class="bottom-bar" id="bottomBar">
-      <button class="btn" id="submitBtn">下一题</button>
-    </div>
+    <form id="answerForm" autocomplete="off">
+      <input type="number" id="answer" inputmode="numeric" enterkeyhint="done">
+      <button class="btn" id="submitBtn" type="submit">下一题</button>
+    </form>
   </div>
 
   <!-- 结算 -->
@@ -486,28 +469,15 @@
   }
 
   $('startBtn').addEventListener('click', startGame);
-  $('submitBtn').addEventListener('click', submitAnswer);
+  // 下一题按钮与输入框同在一个表单中，点击按钮或键盘的回车/完成键都会提交
+  $('answerForm').addEventListener('submit', e => {
+    e.preventDefault();
+    submitAnswer();
+  });
   $('againBtn').addEventListener('click', startGame);
   $('backBtn').addEventListener('click', backToMenu);
   $('tabOk').addEventListener('click', () => showDetailTab('ok'));
   $('tabBad').addEventListener('click', () => showDetailTab('bad'));
-
-  $('answer').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitAnswer();
-  });
-
-  // iPhone 弹出数字键盘时，固定在底部的按钮会被键盘遮住：
-  // 用 visualViewport 计算键盘高度，把底部按钮顶到键盘上方
-  function fitBottomBarToKeyboard() {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-    $('bottomBar').style.bottom = Math.max(0, keyboardHeight) + 'px';
-  }
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', fitBottomBarToKeyboard);
-    window.visualViewport.addEventListener('scroll', fitBottomBarToKeyboard);
-  }
 
   $('bestMenu').textContent = getBest();
 </script>
