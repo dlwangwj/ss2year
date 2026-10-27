@@ -220,7 +220,7 @@
     <div class="question" id="question"></div>
     <input type="number" id="answer" inputmode="numeric" autocomplete="off">
 
-    <div class="bottom-bar">
+    <div class="bottom-bar" id="bottomBar">
       <button class="btn" id="submitBtn">下一题</button>
     </div>
   </div>
@@ -495,6 +495,19 @@
   $('answer').addEventListener('keydown', e => {
     if (e.key === 'Enter') submitAnswer();
   });
+
+  // iPhone 弹出数字键盘时，固定在底部的按钮会被键盘遮住：
+  // 用 visualViewport 计算键盘高度，把底部按钮顶到键盘上方
+  function fitBottomBarToKeyboard() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+    $('bottomBar').style.bottom = Math.max(0, keyboardHeight) + 'px';
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitBottomBarToKeyboard);
+    window.visualViewport.addEventListener('scroll', fitBottomBarToKeyboard);
+  }
 
   $('bestMenu').textContent = getBest();
 </script>
